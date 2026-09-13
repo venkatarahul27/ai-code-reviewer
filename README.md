@@ -1,21 +1,23 @@
 # AI Code Reviewer
 
-Automated code review assistant powered by Claude AI. Analyzes pull requests for bugs, security vulnerabilities, performance issues, and code quality — then posts inline review comments directly on GitHub.
+A Python CLI prototype that retrieves GitHub pull-request diffs, sends chunks to Claude for analysis, filters findings by severity, and posts inline review comments.
 
-## Features
+## Current Status
 
-- **Multi-dimensional Analysis** — checks for bugs, security flaws, performance bottlenecks, and style issues in a single pass
-- **Inline PR Comments** — posts findings as GitHub review comments on the exact lines that need attention
-- **Context-Aware** — understands the full diff context, not just individual lines
-- **Configurable Rules** — customize severity thresholds, ignore patterns, and focus areas via `.codereview.yml`
-- **CI/CD Ready** — runs as a GitHub Action or standalone CLI tool
+The core review pipeline is implemented. Automated test cases and a GitHub Actions workflow have not been added yet.
+
+- Reviews diff chunks for potential bugs, security issues, performance problems, and error-handling gaps.
+- Uses a default minimum severity of medium when no configuration file is present.
+- Posts findings as GitHub review comments. Running the CLI can create comments on the specified pull request.
+- Configuration support is incomplete: focus areas, ignore patterns, and comment limits are not currently enforced by the review pipeline.
+- Model errors can currently be omitted from the collected results. An empty result is not proof that a pull request is free of issues.
 
 ## Architecture
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
 │  GitHub PR   │────▶│  Diff Parser  │────▶│  Claude AI      │
-│  Webhook     │     │  & Chunker    │     │  Analysis       │
+│  CLI input   │     │  & Chunker    │     │  Analysis       │
 └─────────────┘     └──────────────┘     └────────┬────────┘
                                                    │
                                           ┌────────▼────────┐
@@ -44,29 +46,17 @@ python -m src.reviewer --repo owner/repo --pr 42
 
 ## Configuration
 
-Create a `.codereview.yml` in your repo root:
+The CLI reads `ANTHROPIC_API_KEY` and `GITHUB_TOKEN` from the environment. The GitHub token must have access to the selected repository and permission to submit review comments.
 
-```yaml
-severity_threshold: medium
-focus_areas:
-  - security
-  - performance
-  - error_handling
-ignore_patterns:
-  - "*.test.py"
-  - "docs/**"
-max_comments: 15
-```
+Use the default configuration by leaving `.codereview.yml` absent. The YAML configuration loader needs further validation before custom configuration can be relied on.
 
 ## Tech Stack
 
 | Component | Technology |
 |-----------|-----------|
-| AI Engine | Claude 3.5 (Anthropic SDK) |
+| AI Engine | Claude via the Anthropic SDK; model configured in `src/analyzer.py` |
 | Language | Python 3.11+ |
-| API Framework | FastAPI |
 | GitHub Integration | PyGithub |
-| Testing | pytest + pytest-asyncio |
 
 ## Project Structure
 
@@ -80,14 +70,23 @@ ai-code-reviewer/
 │   ├── commenter.py       # GitHub PR comment builder
 │   └── config.py          # Configuration loader
 ├── tests/
-│   ├── test_reviewer.py
-│   ├── test_diff_parser.py
-│   └── test_analyzer.py
-├── .codereview.yml
+│   └── __init__.py        # Test package placeholder; test cases are planned
 ├── requirements.txt
 └── README.md
 ```
 
+## Development Roadmap
+
+- [ ] Add unit tests for parsing, analysis, configuration, and comment construction.
+- [ ] Validate model responses and distinguish API failures from clean reviews.
+- [ ] Enforce configured ignore patterns, focus areas, and comment limits.
+- [ ] Validate comment locations against the pull-request diff.
+- [ ] Add a reproducible example and GitHub Actions integration.
+
+## Contributing
+
+Focused improvements are welcome. Include reproduction steps and relevant tests with behavior changes.
+
 ## License
 
-MIT
+[MIT](LICENSE)
